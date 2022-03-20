@@ -19,13 +19,13 @@ class Agraph(tk.Frame):
         self.master = master
         self.params = params
         frame = tk.Frame(self.master)
-        frame.pack()
+        frame.pack(fill="both", expand=True)
 
         fig = Figure()
         self.ax = fig.add_subplot(1, 1, 1)
         self.fig_canvas = FigureCanvasTkAgg(fig, frame)
         self.toolbar = NavigationToolbar2Tk(self.fig_canvas, frame)
-        self.fig_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.fig_canvas.get_tk_widget().pack(fill="both", expand=True)
 
         button = tk.Button(self.master, text="Draw Graph", command=self.button_click)
         button.pack()
@@ -86,7 +86,7 @@ class AppMain(tk.Frame):
         # --- tabs at left -----------------------------------
 
         nb_left = ttk.Notebook(master)
-        nb_left.grid(row=0, column=0, sticky="news")
+        nb_left.pack(side="left", fill="y", expand=True)  # できればwidthを固定したいがexpandは縦横両方しかできない？
 
         # tab1
         self.tab1 = tk.Frame(nb_left)
@@ -100,7 +100,8 @@ class AppMain(tk.Frame):
 
         # --- tabs at right -----------------------------------
         nb_right = ttk.Notebook(master)
-        nb_right.grid(row=0, column=1)
+        nb_right.pack(side="left", fill="both", expand=True)
+        # nb_right.grid(row=0, column=1)
 
         # graph window
         tab_graph1 = tk.Frame(nb_right)
