@@ -31,7 +31,7 @@ class Agraph(tk.Frame):
 
     def button_click(self):
         x = np.arange(-np.pi, np.pi, 0.001)
-        y = np.sin(x * self.params.param1.var.get())
+        y = np.sin(x * self.params.param1.var.get()) * self.params.param6.var.get()
         self.ax.plot(x, y)
         self.fig_canvas.draw()
 
@@ -82,6 +82,41 @@ class ParamSlider():
     def when_entry_input(self, event):
         self.var.set(int(self.entry.get(), 0))
 
+class ParamRadio():
+    """ パラメータを入力するためのラジオボタン
+        値： self.var
+        choices: 下記形式の、選択肢と値のリスト
+        [
+            [param1 name, value],
+            [param2 name, value],
+            ...,
+        ] 
+        init(option): 初期値
+    """
+
+    def __init__(self, master, label, choices, init=None):
+        self.master = master
+        self.frame = tk.Frame(self.master)
+        self.frame_box = tk.Frame(self.frame)
+
+        # パラメータ
+        self.var = tk.DoubleVar(value=init)
+
+        # -----------------------------------
+        # ラベルフレーム
+        self.lframe = tk.LabelFrame(self.master, text=label, labelanchor="nw")
+        self.lframe.pack(fill="x", padx=3, pady=0)
+
+        # -----------------------------------
+        # ラジオボタン
+        self.radios = []
+        for choice in choices:
+            self.radios.append(
+                tk.Radiobutton(self.lframe, text=choice[0], value=choice[1], variable=self.var)
+            )
+        for radio in self.radios:
+            radio.pack(anchor="nw")
+
 
 class Params():
     """ このクラスでは、計算に使用するパラメータを定義します。
@@ -102,7 +137,15 @@ class Params():
         self.param5 = ParamSlider(master, "param5", 80, 200)
 
     def def_tab2(self, master):
-        self.param6 = ParamSlider(master, "param6", 0, 100)
+        param6_choices = [
+            ["振幅 0.5", 0.5],
+            ["振幅 1.0", 1],
+            ["振幅 2.0", 2],
+            ["振幅 5.0", 5],
+            ["振幅 10", 10],
+            ["振幅 100", 100],
+        ]
+        self.param6 = ParamRadio(master, "param6", param6_choices, init=10)
         self.param7 = ParamSlider(master, "param7", 50, 100)
         self.param8 = ParamSlider(master, "param8", 50, 100)
         self.param9 = ParamSlider(master, "param9", 50, 100)
