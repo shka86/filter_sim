@@ -18,23 +18,52 @@ class Agraph(tk.Frame):
         super().__init__(master)
         self.master = master
         self.params = params
+
+        # --- 描画制御用のボタンを配置するフレーム -----------------------------------
+        control_frame = tk.Frame(self.master)
+        control_frame.pack(fill="both", expand=True)
+
+        # 描画開始、都度描画ボタン
+        button = tk.Button(control_frame, text="Draw Graph", command=self.button_click)
+        button.pack(side="left")
+
+        # 連続描画enable
+        self.graph_enable = pw.ParamCheckBox(control_frame, "graph_enable")
+
+        # --- グラフを配置するフレーム -----------------------------------
         frame = tk.Frame(self.master)
         frame.pack(fill="both", expand=True)
 
+        # --- グラフの中身 -----------------------------------
+        x = self.func_x()
+        y = self.func_y(x)
+
         fig = Figure()
         self.ax = fig.add_subplot(1, 1, 1)
+        self.line, = self.ax.plot(x, y)
         self.fig_canvas = FigureCanvasTkAgg(fig, frame)
         self.toolbar = NavigationToolbar2Tk(self.fig_canvas, frame)
         self.fig_canvas.get_tk_widget().pack(fill="both", expand=True)
 
-        button = tk.Button(self.master, text="Draw Graph", command=self.button_click)
-        button.pack()
+    def func_x(self):
+        return np.arange(-np.pi, np.pi, 0.001)
+
+    def func_y(self, x):
+        return np.sin(x * self.params.param1.var.get()) * self.params.param6.var.get()
 
     def button_click(self):
-        x = np.arange(-np.pi, np.pi, 0.001)
-        y = np.sin(x * self.params.param1.var.get()) * self.params.param6.var.get()
-        self.ax.plot(x, y)
+        self.graph_update()
+
+    def graph_update(self):
+        x = self.func_x()
+        y = self.func_y(x)
+        self.line.set_ydata(y)
         self.fig_canvas.draw()
+        if self.graph_enable.var.get():
+            self.after(1, self.graph_update)
+        else:
+            pass
+
 
 class Params():
     """ このクラスでは、計算に使用するパラメータを定義します。

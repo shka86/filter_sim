@@ -88,3 +88,27 @@ class ParamRadio():
             )
         for radio in self.radios:
             radio.pack(anchor="nw")
+
+class ParamCheckBox():
+    """ BOOL型のパラメータを設定するためのチェックボックス
+        値： self.var
+        init(option): 初期値
+    """
+
+    def __init__(self, master, label, init=False):
+        self.master = master
+        self.label = label
+
+        # パラメータ
+        self.var = tk.BooleanVar(value=init)
+
+        # -----------------------------------
+        # チェックボックス
+        self.checkbox = tk.Checkbutton(self.master, text=label, variable=self.var, command=self.when_param_update)
+    
+        # self.var.trace('w', self.when_param_update)
+        self.checkbox.pack(anchor="nw")
+
+    def when_param_update(self):
+        print(f"{self.label} is {self.var.get()}")
+
