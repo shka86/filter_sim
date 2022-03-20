@@ -39,16 +39,16 @@ class Agraph(tk.Frame):
 class ParamSlider():
     """ パラメータを入力するためのスライダおよび入力BOX
         値： self.var
-        initval(option): 初期値
+        init(option): 初期値
     """
 
-    def __init__(self, master, label, min_, max_):
+    def __init__(self, master, label, min_, max_, init=None):
         self.master = master
         self.frame = tk.Frame(self.master)
         self.frame_box = tk.Frame(self.frame)
 
         # パラメータ
-        self.var = tk.IntVar()
+        self.var = tk.IntVar(value=init)
 
         # -----------------------------------
         # スライダー
@@ -62,8 +62,6 @@ class ParamSlider():
 
         # spin box
         self.spinbox = tk.Spinbox(self.frame_box, textvariable=self.var, width=10, from_=min_, to=max_, increment=1)
-        # self.spinbox.bind(sequence="<Key>", func=self.when_param_update)
-        # self.spinbox.bind(sequence="<Button>", func=self.when_param_update)
         self.spinbox.pack()
 
         # entry(独立に入力可能とするために、Enterを押したときにだけ更新するようにつくる。textvariableを使ってはいけない)
@@ -85,46 +83,75 @@ class ParamSlider():
         self.var.set(int(self.entry.get(), 0))
 
 
-class Param():
-    def __init__(self, master=None, value=None, ):
-        self.param = tk.IntVar(master=master, value=None)
-        self.widget = ParamSlider(master, "param1", 0, 100)
-
-
 class Params():
-    def __init__(self, master):
-        self.param1 = ParamSlider(master, "param1", 0, 100)
+    """ このクラスでは、計算に使用するパラメータを定義します。
+        master: パラメータを調整するスライダなどのウィジェットを置く場所を指定します。
+
+        パラメータを一つのインスタンスにまとめることで、あとあとあれこれいろんなことから
+        パラメータを引っ張ってきて計算したくなる場合にスムーズに対応できるようにしておく。
+    """
+
+    def __init__(self):
+        pass
+
+    def def_tab1(self, master):
+        self.param1 = ParamSlider(master, "param1", 0, 100, init=5)
         self.param2 = ParamSlider(master, "param2", 50, 100)
         self.param3 = ParamSlider(master, "param3", 50, 100)
         self.param4 = ParamSlider(master, "param4", 50, 100)
         self.param5 = ParamSlider(master, "param5", 80, 200)
+
+    def def_tab2(self, master):
+        self.param6 = ParamSlider(master, "param6", 0, 100)
+        self.param7 = ParamSlider(master, "param7", 50, 100)
+        self.param8 = ParamSlider(master, "param8", 50, 100)
+        self.param9 = ParamSlider(master, "param9", 50, 100)
+        self.param10 = ParamSlider(master, "param10", 80, 200)
+
+
+class AppMain(tk.Frame):
+    """ このクラスでは、アプリケーションの外形を定義します。
+        設定タブの分割やグラフタブなどを定義します。
+    """
+
+    def __init__(self, master=None):
+        super().__init__(master)
+        master.title("gui_graph")
+        # master.geometry("500x250")
+
+        # パラメータは全部ここに格納される
+        self.params = Params()
+
+        # --- tabs at left -----------------------------------
+
+        nb_left = ttk.Notebook(master)
+        nb_left.grid(row=0, column=0, sticky="news")
+
+        # tab1
+        self.tab1 = tk.Frame(nb_left)
+        nb_left.add(self.tab1, text='tab1')
+        self.params.def_tab1(self.tab1)
+
+        # tab2
+        self.tab2 = tk.Frame(nb_left)
+        nb_left.add(self.tab2, text='tab2')
+        self.params.def_tab2(self.tab2)
+
+        # --- tabs at right -----------------------------------
+        nb_right = ttk.Notebook(master)
+        nb_right.grid(row=0, column=1)
+
+        # graph window
+        tab_graph1 = tk.Frame(nb_right)
+        nb_right.add(tab_graph1, text='tab_graph1')
+        graph = Agraph(tab_graph1, self.params)
 
 
 if __name__ == '__main__':
 
     # main window
     root = tk.Tk()
-    root.title("gui_graph")
-    # root.geometry("500x250")
-
-    # tabs at left
-    nb_left = ttk.Notebook(root)
-    nb_left.grid(row=0, column=0, sticky="news")
-
-    tab1 = tk.Frame(nb_left)
-    nb_left.add(tab1, text='tab1')
-    params = Params(tab1)
-
-    # tab2 = tk.Frame(nb_left)
-    # nb_left.add(tab2, text='tab2')
-
-    # tabs at right
-    nb_right = ttk.Notebook(root)
-    nb_right.grid(row=0, column=1)
-
-    tab_graph1 = tk.Frame(nb_right)
-    nb_right.add(tab_graph1, text='tab_graph1')
-    graph = Agraph(tab_graph1, params)
+    app = AppMain(master=root)
 
     # Start App
-    root.mainloop()
+    app.mainloop()
