@@ -14,13 +14,20 @@ class ParamSlider():
         init(option): 初期値
     """
 
-    def __init__(self, master, label, min_, max_, init=None):
+    def __init__(self, master, label, min_, max_, init=None, type_="int"):
         self.master = master
         self.frame = tk.Frame(self.master)
         self.frame_box = tk.Frame(self.frame)
 
         # パラメータ
-        self.var = tk.IntVar(value=init)
+        if type_ == "int":
+            self.var = tk.IntVar(value=init)
+        elif type_ == "double":
+            self.var = tk.DoubleVar(value=init)
+        else:
+            print("invalid var type")
+            exit()
+
 
         # -----------------------------------
         # スライダー

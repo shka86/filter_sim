@@ -10,10 +10,11 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import matplotlib as plt
 from pathlib import Path as p
+import control.matlab as cm
 
 import param_widgets as pw
 
-class Agraph(tk.Frame):
+class Graph1(tk.Frame):
     def __init__(self, master, params):
         super().__init__(master)
         self.master = master
@@ -22,10 +23,6 @@ class Agraph(tk.Frame):
         # --- 描画制御用のボタンを配置するフレーム -----------------------------------
         control_frame = tk.Frame(self.master)
         control_frame.pack(fill="both", expand=True)
-
-        # 描画開始、都度描画ボタン
-        button = tk.Button(control_frame, text="Draw Graph", command=self.button_click)
-        button.pack(side="left")
 
         # 連続描画enable
         self.graph_enable = pw.ParamCheckBox(control_frame, "graph_enable")
@@ -36,33 +33,53 @@ class Agraph(tk.Frame):
         frame.pack(fill="both", expand=True)
 
         # --- グラフの中身 -----------------------------------
-        x = self.func_x()
-        y = self.func_y(x)
-
         fig = Figure()
-        self.ax = fig.add_subplot(1, 1, 1)
-        self.line, = self.ax.plot(x, y)
         self.fig_canvas = FigureCanvasTkAgg(fig, frame)
         self.toolbar = NavigationToolbar2Tk(self.fig_canvas, frame)
         self.fig_canvas.get_tk_widget().pack(fill="both", expand=True)
 
-    def func_x(self):
-        return np.arange(-np.pi, np.pi, 0.001)
+        # グラフ1
+        self.ax = fig.add_subplot(1, 1, 1)
+        self.ax.set_xlabel("t[s]")
+        self.ax.set_ylabel("[mV]")
+        self.ax.set_ylim([-5000, 5000])
+        self.t = np.arange(0, 1000, 1)
 
-    def func_y(self, x):
-        return np.sin(x * self.params.param1.var.get()) * self.params.param6.var.get()
+        # 入力波形: input
+        self.v_input = self.f_input(self.t)
+        self.line_input, = self.ax.plot(self.t, self.v_input)
 
-    def button_click(self):
-        self.graph_update()
+        # 出力波形: output, ローパスフィルタを挿入した場合
+        self.v_output = self.f_output(self.v_input)
+        self.line_output, = self.ax.plot(self.t, self.v_output)
+
+
+    def f_input(self, t):
+        vamp = self.params.amplitude.var.get()
+        vcom = self.params.vcommon.var.get()
+        return np.where(t < 100, (vcom - vamp / 2), (vcom + vamp / 2))
+
+    def f_output(self, x):
+        lpf_r = self.params.lpf_r.var.get()
+        lpf_c = self.params.lpf_c.var.get()
+        # filter_t = 1 / (2 * np.pi * lpf_r * lpf_c * 1e-6)
+        filter_t = (2 * np.pi * lpf_r * lpf_c * 1e-6)  # 時定数(2pi要るか未確認。検算すればわかるはず)
+        num = [1]  # 伝達関数分子
+        den = [filter_t, 1]  # 伝達関数分母
+        sys = cm.tf(num, den)  # 伝達関数
+        y, _, _ = cm.lsim(sys, x, self.t)  # 任意波形に対する応答
+        return y
 
     def graph_update(self, *args):
+        self.v_input = self.f_input(self.t)
+        self.line_input.set_ydata(self.v_input)
 
-        x = self.func_x()
-        y = self.func_y(x)
-        self.line.set_ydata(y)
+        self.v_output = self.f_output(self.v_input)
+        self.line_output.set_ydata(self.v_output)
+
         self.fig_canvas.draw()
         if self.graph_enable.var.get():
-            self.after(1, self.graph_update)
+            self.after(100, self.graph_update)
         else:
             pass
 
@@ -78,12 +95,14 @@ class Params():
     def __init__(self):
         pass
 
-    def def_tab1(self, master):
-        self.param1 = pw.ParamSlider(master, "param1", 0, 100, init=5)
-        self.param2 = pw.ParamSlider(master, "param2", 50, 100)
-        self.param3 = pw.ParamSlider(master, "param3", 50, 100)
-        self.param4 = pw.ParamSlider(master, "param4", 50, 100)
-        self.param5 = pw.ParamSlider(master, "param5", 80, 200)
+    def def_input_signal(self, master):
+        self.amplitude = pw.ParamSlider(master, "amplitude[mV]", 0, 3000, init=3000, type_="double")
+        self.vcommon = pw.ParamSlider(master, "vcommon[mV]", 0, 3000, init=1500, type_="double")
+        self.lpf_r = pw.ParamSlider(master, "lpf_r[ohm]", 1, 10000, init=1000, type_="double")
+        self.lpf_c = pw.ParamSlider(master, "lpf_c[uF]", 1, 1000, init=10, type_="double")
+        # self.param3 = pw.ParamSlider(master, "param3", 50, 100)
+        # self.param4 = pw.ParamSlider(master, "param4", 50, 100)
+        # self.param5 = pw.ParamSlider(master, "param5", 80, 200)
 
     def def_tab2(self, master):
         param6_choices = [
@@ -119,10 +138,10 @@ class AppMain(tk.Frame):
         nb_left = ttk.Notebook(master)
         nb_left.pack(side="left", fill="y", expand=True)  # できればwidthを固定したいがexpandは縦横両方しかできない？
 
-        # tab1
-        self.tab1 = tk.Frame(nb_left)
-        nb_left.add(self.tab1, text='tab1')
-        self.params.def_tab1(self.tab1)
+        # input_signal
+        self.input_signal = tk.Frame(nb_left)
+        nb_left.add(self.input_signal, text='input_signal')
+        self.params.def_input_signal(self.input_signal)
 
         # tab2
         self.tab2 = tk.Frame(nb_left)
@@ -137,7 +156,7 @@ class AppMain(tk.Frame):
         # graph window
         tab_graph1 = tk.Frame(nb_right)
         nb_right.add(tab_graph1, text='tab_graph1')
-        graph = Agraph(tab_graph1, self.params)
+        graph = Graph1(tab_graph1, self.params)
 
 
 if __name__ == '__main__':
