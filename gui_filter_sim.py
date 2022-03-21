@@ -3,6 +3,7 @@
 
 from mimetypes import init
 import numpy as np
+import scipy as sp
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.figure import Figure
 import sys
@@ -40,7 +41,7 @@ class Graph1(tk.Frame):
 
         # グラフ1
         self.ax = fig.add_subplot(1, 1, 1)
-        self.ax.set_xlabel("t[s]")
+        self.ax.set_xlabel("t[us]")
         self.ax.set_ylabel("[mV]")
         self.ax.set_ylim([-5000, 5000])
         self.t = np.arange(0, 1000, 1)
@@ -57,7 +58,15 @@ class Graph1(tk.Frame):
     def f_input(self, t):
         vamp = self.params.amplitude.var.get()
         vcom = self.params.vcommon.var.get()
-        return np.where(t < 100, (vcom - vamp / 2), (vcom + vamp / 2))
+        f = self.params.frequency.var.get()
+        input_wave = self.params.input_wave.var.get()
+        if input_wave == 0:  # step
+            wave = np.where(t < 100, (vcom - vamp / 2), (vcom + vamp / 2))
+        if input_wave == 1:  # sin
+            wave = np.sin(f * t * 1e-6) * vamp + vcom
+        if input_wave == 2:  # squware
+            wave = sp.signal.square(f * t * 1e-6) * vamp + vcom
+        return wave
 
     def f_output(self, x):
         lpf_r = self.params.lpf_r.var.get()
@@ -67,7 +76,7 @@ class Graph1(tk.Frame):
         num = [1]  # 伝達関数分子
         den = [filter_t, 1]  # 伝達関数分母
         sys = cm.tf(num, den)  # 伝達関数
-        y, _, _ = cm.lsim(sys, x, self.t)  # 任意波形に対する応答
+        y, _, __ = cm.lsim(sys, x, self.t)  # 任意波形に対する応答
         return y
 
     def graph_update(self, *args):
@@ -96,6 +105,14 @@ class Params():
         pass
 
     def def_input_signal(self, master):
+        self.input_wave = pw.ParamRadio(master, "input_wave",
+                                        [
+                                            ["step", 0],
+                                            ["sin", 1],
+                                            ["square", 2],
+                                        ],
+                                        init=0)
+        self.frequency = pw.ParamSlider(master, "frequency[Hz]", 1, 1e6, init=10, type_="double")
         self.amplitude = pw.ParamSlider(master, "amplitude[mV]", 0, 3000, init=3000, type_="double")
         self.vcommon = pw.ParamSlider(master, "vcommon[mV]", 0, 3000, init=1500, type_="double")
         self.lpf_r = pw.ParamSlider(master, "lpf_r[ohm]", 1, 10000, init=1000, type_="double")
