@@ -14,6 +14,14 @@ from pathlib import Path as p
 import param_widgets as pw
 
 class Agraph(tk.Frame):
+    """ このクラスでは、描画されるグラフを定義します。
+        master は AppMain の タブ です。
+        params は グラフに描画するパラメータを与えるためのタブです。
+
+        描画に関するボタン類、グラフ、計算式 で構成されています。
+        グラフのパラメータは クラス: Params で設定する
+    """
+
     def __init__(self, master, params):
         super().__init__(master)
         self.master = master
